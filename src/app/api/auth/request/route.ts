@@ -17,9 +17,11 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const url = await createMagicLink(email);
+  const relativeUrl = await createMagicLink(email);
+  // Build a full URL based on the current request so it's clickable from the same origin.
+  const fullUrl = new URL(relativeUrl, req.url).toString();
   // In PoC: log naar server console + ook terugsturen op de dev pagina (/dev/magic-links)
-  console.log(`\n=== MAGIC LINK voor ${email} ===\n${url}\n================================\n`);
+  console.log(`\n=== MAGIC LINK voor ${email} ===\n${fullUrl}\n================================\n`);
 
   return NextResponse.json({
     ok: true,

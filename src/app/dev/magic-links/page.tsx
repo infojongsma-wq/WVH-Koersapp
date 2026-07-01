@@ -7,7 +7,6 @@ export default async function MagicLinksDevPage() {
     orderBy: { createdAt: "desc" },
     take: 25,
   });
-  const base = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
 
   return (
     <main className="max-w-3xl mx-auto p-6">
@@ -23,7 +22,8 @@ export default async function MagicLinksDevPage() {
         {tokens.map((t) => {
           const expired = t.expiresAt < new Date();
           const used = Boolean(t.usedAt);
-          const url = `${base}/api/auth/verify?token=${t.token}`;
+          // Relative URL works on any host (localhost, Codespaces, prod).
+          const url = `/api/auth/verify?token=${t.token}`;
           return (
             <div
               key={t.id}

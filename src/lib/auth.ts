@@ -17,8 +17,8 @@ export async function createMagicLink(email: string) {
   await prisma.magicLinkToken.create({
     data: { token, email: normalized, expiresAt },
   });
-  const base = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
-  return `${base}/api/auth/verify?token=${token}`;
+  // Return a relative path so it works on any host (localhost, Codespaces, prod).
+  return `/api/auth/verify?token=${token}`;
 }
 
 export async function consumeMagicLink(token: string) {
