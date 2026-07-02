@@ -41,9 +41,9 @@ export default async function LibraryPage({
   }
   if (sp.q) {
     where.OR = [
-      { title: { contains: sp.q } },
-      { description: { contains: sp.q } },
-      { captainName: { contains: sp.q } },
+      { title: { contains: sp.q, mode: "insensitive" } },
+      { description: { contains: sp.q, mode: "insensitive" } },
+      { captainName: { contains: sp.q, mode: "insensitive" } },
     ];
   }
 

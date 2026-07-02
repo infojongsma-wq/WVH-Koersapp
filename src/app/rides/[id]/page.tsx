@@ -1,13 +1,12 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { readFile } from "fs/promises";
-import path from "path";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { LevelBadge } from "@/components/LevelBadge";
 import { CategoryBadge } from "@/components/CategoryBadge";
 import { formatDateNL, formatTimeNL } from "@/lib/format";
 import { parseGpx } from "@/lib/gpx";
+import { readGpxContent } from "@/lib/storage";
 import ParticipationButtons from "@/components/ParticipationButtons";
 import CommentForm from "@/components/CommentForm";
 import MapPreview from "@/components/MapPreviewLoader";
@@ -41,15 +40,10 @@ export default async function RideDetail({
 
   let routeCoords: [number, number][] | undefined;
   if (ride.gpxFilename) {
-    try {
-      const xml = await readFile(
-        path.join(process.cwd(), "public", "uploads", ride.gpxFilename),
-        "utf8"
-      );
+    const xml = await readGpxContent(ride.gpxFilename);
+    if (xml) {
       const parsed = parseGpx(xml);
       if (parsed) routeCoords = parsed.coordinates;
-    } catch {
-      // ignore
     }
   }
 

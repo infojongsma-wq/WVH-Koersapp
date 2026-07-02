@@ -1,17 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { mkdir, writeFile } from "fs/promises";
-import path from "path";
-import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { fetchWeatherForRide, geocodeLocation } from "@/lib/weather";
-import { DEFAULT_START_COORDS, DEFAULT_START_LOCATION, MAX_PARTICIPANTS } from "@/lib/constants";
+import {
+  DEFAULT_START_COORDS,
+  DEFAULT_START_LOCATION,
+  MAX_PARTICIPANTS,
+} from "@/lib/constants";
+import { saveGpxFile } from "@/lib/storage";
 
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
   const category = sp.get("category");
   const level = sp.get("level");
-  const scope = sp.get("scope") ?? "upcoming"; // "upcoming" | "all" | "past"
+  const scope = sp.get("scope") ?? "upcoming";
 
   const where: Record<string, unknown> = { status: "PUBLISHED" };
   if (category) where.category = category;
@@ -87,29 +89,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Ongeldige datum" }, { status: 400 });
   }
 
-  // Coords for weather: use default if location is default, else geocode
   let coords = DEFAULT_START_COORDS;
   if (startLocation !== DEFAULT_START_LOCATION) {
     const g = await geocodeLocation(startLocation);
     if (g) coords = g;
   }
 
-  // GPX upload
   let gpxFilename: string | null = null;
   let gpxOriginalName: string | null = null;
   const gpxFile = form.get("gpx");
   if (gpxFile && typeof gpxFile !== "string" && gpxFile.size > 0) {
-    const safeBase = gpxFile.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const filename = `${Date.now()}_${randomBytes(4).toString("hex")}_${safeBase}`;
-    const uploadsDir = path.join(process.cwd(), "public", "uploads");
-    await mkdir(uploadsDir, { recursive: true });
-    const buf = Buffer.from(await gpxFile.arrayBuffer());
-    await writeFile(path.join(uploadsDir, filename), buf);
-    gpxFilename = filename;
-    gpxOriginalName = gpxFile.name;
+    const stored = await saveGpxFile(gpxFile);
+    gpxFilename = stored.ref;
+    gpxOriginalName = stored.originalName;
   }
 
-  // Weather
   const weather = await fetchWeatherForRide({
     lat: coords.lat,
     lon: coords.lon,

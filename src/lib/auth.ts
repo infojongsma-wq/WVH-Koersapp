@@ -38,6 +38,20 @@ export async function consumeMagicLink(token: string) {
 
 export async function isWhitelisted(email: string) {
   const e = email.trim().toLowerCase();
+  const adminEmails = (process.env.ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  if (adminEmails.includes(e)) {
+    // Admin bootstrap: auto-add to whitelist on first request so a fresh
+    // deployment doesn't require manual seeding.
+    await prisma.whitelistEntry.upsert({
+      where: { email: e },
+      create: { email: e, note: "Admin bootstrap" },
+      update: {},
+    });
+    return true;
+  }
   const hit = await prisma.whitelistEntry.findUnique({ where: { email: e } });
   return Boolean(hit);
 }

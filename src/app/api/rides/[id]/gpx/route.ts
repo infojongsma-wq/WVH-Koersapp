@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readFile } from "fs/promises";
-import path from "path";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
+import { streamGpxToResponse } from "@/lib/storage";
 
 export async function GET(
   _req: NextRequest,
@@ -15,17 +14,13 @@ export async function GET(
   if (!ride || !ride.gpxFilename)
     return NextResponse.json({ error: "Geen GPX" }, { status: 404 });
 
-  const filePath = path.join(process.cwd(), "public", "uploads", ride.gpxFilename);
-  try {
-    const buf = await readFile(filePath);
+  const res = await streamGpxToResponse(ride.gpxFilename);
+  if (!res) return NextResponse.json({ error: "Bestand niet gevonden" }, { status: 404 });
+
+  // Add filename hint for local downloads (Vercel Blob redirects handle their own).
+  if (!ride.gpxFilename.startsWith("http")) {
     const filename = ride.gpxOriginalName ?? ride.gpxFilename;
-    return new NextResponse(buf, {
-      headers: {
-        "Content-Type": "application/gpx+xml",
-        "Content-Disposition": `attachment; filename="${filename}"`,
-      },
-    });
-  } catch {
-    return NextResponse.json({ error: "Bestand niet gevonden" }, { status: 404 });
+    res.headers.set("Content-Disposition", `attachment; filename="${filename}"`);
   }
+  return res;
 }

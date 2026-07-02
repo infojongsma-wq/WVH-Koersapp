@@ -1,12 +1,12 @@
 // WVH Koersapp - Prisma schema
-// SQLite for local PoC. Switch `provider` to "postgresql" when moving to Supabase.
+// Postgres (Vercel Postgres / Neon / Supabase). DATABASE_URL is set by Vercel.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
