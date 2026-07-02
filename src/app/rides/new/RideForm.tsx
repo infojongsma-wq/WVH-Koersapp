@@ -21,15 +21,24 @@ export default function RideForm(props: Props) {
     setSubmitting(true);
     setError(null);
     const form = new FormData(e.currentTarget);
-    const res = await fetch("/api/rides", { method: "POST", body: form });
-    const data = await res.json();
-    setSubmitting(false);
-    if (!res.ok) {
-      setError(data.error ?? "Er ging iets mis");
-      return;
+    try {
+      const res = await fetch("/api/rides", { method: "POST", body: form });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setSubmitting(false);
+        setError(data.error ?? `Er ging iets mis (${res.status})`);
+        return;
+      }
+      router.push(`/rides/${data.id}`);
+      router.refresh();
+    } catch (err) {
+      setSubmitting(false);
+      setError(
+        err instanceof Error
+          ? `Verbindingsfout: ${err.message}`
+          : "Onbekende fout bij aanmaken"
+      );
     }
-    router.push(`/rides/${data.id}`);
-    router.refresh();
   }
 
   return (

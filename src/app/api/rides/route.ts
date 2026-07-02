@@ -9,6 +9,10 @@ import {
 } from "@/lib/constants";
 import { saveGpxFile } from "@/lib/storage";
 
+// Give this route generous headroom on Vercel — upload + geocode + weather
+// can add up to more than the default 10s.
+export const maxDuration = 60;
+
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
   const category = sp.get("category");
@@ -89,26 +93,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Ongeldige datum" }, { status: 400 });
   }
 
-  let coords = DEFAULT_START_COORDS;
-  if (startLocation !== DEFAULT_START_LOCATION) {
-    const g = await geocodeLocation(startLocation);
-    if (g) coords = g;
-  }
-
-  let gpxFilename: string | null = null;
-  let gpxOriginalName: string | null = null;
   const gpxFile = form.get("gpx");
-  if (gpxFile && typeof gpxFile !== "string" && gpxFile.size > 0) {
-    const stored = await saveGpxFile(gpxFile);
-    gpxFilename = stored.ref;
-    gpxOriginalName = stored.originalName;
-  }
+  const hasGpx = gpxFile && typeof gpxFile !== "string" && gpxFile.size > 0;
 
+  // Run independent side-effects in parallel: coord resolution and GPX upload.
+  const [coords, stored] = await Promise.all([
+    startLocation === DEFAULT_START_LOCATION
+      ? Promise.resolve(DEFAULT_START_COORDS)
+      : geocodeLocation(startLocation).then((g) => g ?? DEFAULT_START_COORDS),
+    hasGpx ? saveGpxFile(gpxFile as File) : Promise.resolve(null),
+  ]);
+
+  // Weather depends on coords + datetime; failure is non-fatal.
   const weather = await fetchWeatherForRide({
     lat: coords.lat,
     lon: coords.lon,
     datetime,
-  });
+  }).catch(() => null);
 
   const ride = await prisma.ride.create({
     data: {
@@ -125,8 +126,8 @@ export async function POST(req: NextRequest) {
       startLocation,
       startLat: coords.lat,
       startLon: coords.lon,
-      gpxFilename,
-      gpxOriginalName,
+      gpxFilename: stored?.ref ?? null,
+      gpxOriginalName: stored?.originalName ?? null,
       maxParticipants: MAX_PARTICIPANTS,
       createdById: user.id,
       weatherFetchedAt: weather ? new Date() : null,

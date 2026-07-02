@@ -62,7 +62,14 @@ export async function fetchWeatherForRide(opts: {
   url.searchParams.set("forecast_days", "16");
 
   try {
-    const res = await fetch(url.toString(), { next: { revalidate: 1800 } });
+    // Cap the call so slow upstreams don't stall a serverless function.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4000);
+    const res = await fetch(url.toString(), {
+      next: { revalidate: 1800 },
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
     if (!res.ok) return null;
     const data = (await res.json()) as {
       hourly?: {
@@ -112,7 +119,13 @@ export async function geocodeLocation(q: string): Promise<{ lat: number; lon: nu
   url.searchParams.set("count", "1");
   url.searchParams.set("language", "nl");
   try {
-    const res = await fetch(url.toString(), { next: { revalidate: 86400 } });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 3000);
+    const res = await fetch(url.toString(), {
+      next: { revalidate: 86400 },
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
     if (!res.ok) return null;
     const data = (await res.json()) as {
       results?: { latitude: number; longitude: number }[];
