@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { upload } from "@vercel/blob/client";
 
 type Props = {
   categories: { value: string; label: string; emoji: string }[];
@@ -14,16 +15,37 @@ type Props = {
 export default function RideForm(props: Props) {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  const [progress, setProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
+    setProgress(null);
+
     const form = new FormData(e.currentTarget);
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 45_000);
+    const gpxFile = form.get("gpx");
+    const hasGpx = gpxFile instanceof File && gpxFile.size > 0;
+
     try {
+      // 1. Upload the GPX directly to Vercel Blob (browser → blob storage),
+      // bypassing our serverless function. Server then only stores the URL.
+      if (hasGpx) {
+        setProgress("GPX-bestand uploaden…");
+        const blob = await upload(`gpx/${gpxFile.name}`, gpxFile, {
+          access: "public",
+          handleUploadUrl: "/api/upload/gpx",
+        });
+        form.set("gpxUrl", blob.url);
+        form.set("gpxOriginalName", gpxFile.name);
+        form.delete("gpx");
+      }
+
+      // 2. Submit ride metadata to /api/rides.
+      setProgress("Rit aanmaken…");
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30_000);
       const res = await fetch("/api/rides", {
         method: "POST",
         body: form,
@@ -39,22 +61,21 @@ export default function RideForm(props: Props) {
       }
       if (!res.ok || !data.id) {
         setSubmitting(false);
+        setProgress(null);
         setError(data.error ?? `Er ging iets mis (${res.status})`);
         return;
       }
       router.push(`/rides/${data.id}`);
       router.refresh();
     } catch (err) {
-      clearTimeout(timeout);
       setSubmitting(false);
+      setProgress(null);
       if (err instanceof DOMException && err.name === "AbortError") {
-        setError(
-          "Time-out na 45 sec — waarschijnlijk hangt de GPX-upload naar Vercel Blob. Check Vercel → Storage."
-        );
+        setError("Time-out — probeer opnieuw of neem contact op.");
       } else {
         setError(
           err instanceof Error
-            ? `Verbindingsfout: ${err.message}`
+            ? `Fout: ${err.message}`
             : "Onbekende fout bij aanmaken"
         );
       }
@@ -192,6 +213,12 @@ export default function RideForm(props: Props) {
         Rit wordt aangemaakt door: <strong className="text-ink">{props.createdByLabel}</strong>
       </div>
 
+      {progress && !error && (
+        <div className="bg-cream-100 border border-cream-200 text-ink p-3 rounded-xl text-sm">
+          {progress}
+        </div>
+      )}
+
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl text-sm">
           {error}
@@ -199,7 +226,7 @@ export default function RideForm(props: Props) {
       )}
 
       <button type="submit" disabled={submitting} className="btn-primary w-full">
-        {submitting ? "Bezig met aanmaken…" : "Rit aanmaken"}
+        {submitting ? (progress ?? "Bezig…") : "Rit aanmaken"}
       </button>
     </form>
   );

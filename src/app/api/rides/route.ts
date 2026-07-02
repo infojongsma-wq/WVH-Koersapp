@@ -9,9 +9,7 @@ import {
 } from "@/lib/constants";
 import { saveGpxFile } from "@/lib/storage";
 
-// Give this route generous headroom on Vercel — upload + geocode + weather
-// can add up to more than the default 10s.
-export const maxDuration = 60;
+export const maxDuration = 30;
 
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
@@ -85,6 +83,12 @@ export async function POST(req: NextRequest) {
   const notes = get("notes").trim() || null;
   const startLocation = get("startLocation").trim() || DEFAULT_START_LOCATION;
 
+  // gpxUrl comes from client-side Vercel Blob upload; falls back to server-side
+  // upload of a File when running in local dev without BLOB token.
+  const gpxUrl = get("gpxUrl").trim();
+  const gpxOriginalName = get("gpxOriginalName").trim();
+  const gpxFile = form.get("gpx");
+
   if (!title || !datetimeStr || !category || !level) {
     return NextResponse.json({ error: "Vul alle verplichte velden in" }, { status: 400 });
   }
@@ -93,19 +97,35 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Ongeldige datum" }, { status: 400 });
   }
 
-  const gpxFile = form.get("gpx");
-  const hasGpx = gpxFile && typeof gpxFile !== "string" && gpxFile.size > 0;
-
-  // Run independent side-effects in parallel: coord resolution and GPX upload.
   let coords: { lat: number; lon: number };
-  let stored: Awaited<ReturnType<typeof saveGpxFile>> | null;
+  let storedRef: string | null = null;
+  let storedOriginal: string | null = null;
+
   try {
-    [coords, stored] = await Promise.all([
-      startLocation === DEFAULT_START_LOCATION
-        ? Promise.resolve(DEFAULT_START_COORDS)
-        : geocodeLocation(startLocation).then((g) => g ?? DEFAULT_START_COORDS),
-      hasGpx ? saveGpxFile(gpxFile as File) : Promise.resolve(null),
-    ]);
+    if (gpxUrl && gpxUrl.startsWith("http")) {
+      storedRef = gpxUrl;
+      storedOriginal = gpxOriginalName || null;
+      coords =
+        startLocation === DEFAULT_START_LOCATION
+          ? DEFAULT_START_COORDS
+          : (await geocodeLocation(startLocation)) ?? DEFAULT_START_COORDS;
+    } else if (gpxFile && typeof gpxFile !== "string" && gpxFile.size > 0) {
+      // Legacy path: dev fallback when client didn't do a Blob upload.
+      const [c, stored] = await Promise.all([
+        startLocation === DEFAULT_START_LOCATION
+          ? Promise.resolve(DEFAULT_START_COORDS)
+          : geocodeLocation(startLocation).then((g) => g ?? DEFAULT_START_COORDS),
+        saveGpxFile(gpxFile as File),
+      ]);
+      coords = c;
+      storedRef = stored.ref;
+      storedOriginal = stored.originalName;
+    } else {
+      coords =
+        startLocation === DEFAULT_START_LOCATION
+          ? DEFAULT_START_COORDS
+          : (await geocodeLocation(startLocation)) ?? DEFAULT_START_COORDS;
+    }
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Upload mislukt" },
@@ -113,7 +133,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Weather depends on coords + datetime; failure is non-fatal.
   const weather = await fetchWeatherForRide({
     lat: coords.lat,
     lon: coords.lon,
@@ -135,8 +154,8 @@ export async function POST(req: NextRequest) {
       startLocation,
       startLat: coords.lat,
       startLon: coords.lon,
-      gpxFilename: stored?.ref ?? null,
-      gpxOriginalName: stored?.originalName ?? null,
+      gpxFilename: storedRef,
+      gpxOriginalName: storedOriginal,
       maxParticipants: MAX_PARTICIPANTS,
       createdById: user.id,
       weatherFetchedAt: weather ? new Date() : null,
