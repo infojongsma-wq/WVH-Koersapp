@@ -32,6 +32,14 @@ export async function saveGpxFile(file: File): Promise<StoredFile> {
     return { ref: blob.url, isRemote: true, originalName: file.name };
   }
 
+  // On Vercel the filesystem is read-only. Bail with a clear message instead
+  // of trying to write to disk.
+  if (process.env.VERCEL) {
+    throw new Error(
+      "Vercel Blob niet gekoppeld: BLOB_READ_WRITE_TOKEN ontbreekt. Koppel Storage → Blob aan dit project in Vercel."
+    );
+  }
+
   await mkdir(LOCAL_UPLOAD_DIR, { recursive: true });
   await writeFile(path.join(LOCAL_UPLOAD_DIR, filename), buf);
   return { ref: filename, isRemote: false, originalName: file.name };

@@ -97,12 +97,21 @@ export async function POST(req: NextRequest) {
   const hasGpx = gpxFile && typeof gpxFile !== "string" && gpxFile.size > 0;
 
   // Run independent side-effects in parallel: coord resolution and GPX upload.
-  const [coords, stored] = await Promise.all([
-    startLocation === DEFAULT_START_LOCATION
-      ? Promise.resolve(DEFAULT_START_COORDS)
-      : geocodeLocation(startLocation).then((g) => g ?? DEFAULT_START_COORDS),
-    hasGpx ? saveGpxFile(gpxFile as File) : Promise.resolve(null),
-  ]);
+  let coords: { lat: number; lon: number };
+  let stored: Awaited<ReturnType<typeof saveGpxFile>> | null;
+  try {
+    [coords, stored] = await Promise.all([
+      startLocation === DEFAULT_START_LOCATION
+        ? Promise.resolve(DEFAULT_START_COORDS)
+        : geocodeLocation(startLocation).then((g) => g ?? DEFAULT_START_COORDS),
+      hasGpx ? saveGpxFile(gpxFile as File) : Promise.resolve(null),
+    ]);
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Upload mislukt" },
+      { status: 500 }
+    );
+  }
 
   // Weather depends on coords + datetime; failure is non-fatal.
   const weather = await fetchWeatherForRide({
