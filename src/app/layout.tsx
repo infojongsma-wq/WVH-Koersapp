@@ -55,6 +55,10 @@ export default async function RootLayout({
           </header>
         )}
         <main className="flex-1">{children}</main>
+        <footer className="py-4 text-center text-[10px] text-ink-muted">
+          WVH Koersapp · versie{" "}
+          {process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "dev"}
+        </footer>
       </body>
     </html>
   );

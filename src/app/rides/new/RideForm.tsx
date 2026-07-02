@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { upload } from "@vercel/blob/client";
 
 type Props = {
   categories: { value: string; label: string; emoji: string }[];
@@ -15,68 +14,24 @@ type Props = {
 export default function RideForm(props: Props) {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
-  const [progress, setProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
-    setProgress(null);
-
     const form = new FormData(e.currentTarget);
-    const gpxFile = form.get("gpx");
-    const hasGpx = gpxFile instanceof File && gpxFile.size > 0;
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60_000);
     try {
-      // 1. Upload the GPX directly to Vercel Blob (browser → blob storage),
-      // bypassing our serverless function. Server then only stores the URL.
-      if (hasGpx) {
-        setProgress("GPX-bestand uploaden…");
-        // Verify the token endpoint responds first — its actual error message
-        // is more useful than the generic Blob client "failed to retrieve token".
-        const probe = await fetch("/api/upload/gpx", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ type: "blob.generate-client-token", payload: null }),
-        });
-        if (!probe.ok) {
-          const txt = await probe.text().catch(() => "");
-          let msg = txt;
-          try {
-            const j = JSON.parse(txt);
-            msg = j.error ?? txt;
-          } catch {}
-          throw new Error(
-            `Blob-tokenendpoint gaf ${probe.status}: ${msg || "onbekende fout"}`
-          );
-        }
-
-        const uploadTimeout = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Blob upload duurde langer dan 30s")), 30_000)
-        );
-        const blob = await Promise.race([
-          upload(`gpx/${gpxFile.name}`, gpxFile, {
-            access: "public",
-            handleUploadUrl: "/api/upload/gpx",
-          }),
-          uploadTimeout,
-        ]);
-        form.set("gpxUrl", blob.url);
-        form.set("gpxOriginalName", gpxFile.name);
-        form.delete("gpx");
-      }
-
-      // 2. Submit ride metadata to /api/rides.
-      setProgress("Rit aanmaken…");
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 30_000);
       const res = await fetch("/api/rides", {
         method: "POST",
         body: form,
         signal: controller.signal,
       });
       clearTimeout(timeout);
+
       const raw = await res.text();
       let data: { id?: string; error?: string } = {};
       try {
@@ -86,17 +41,16 @@ export default function RideForm(props: Props) {
       }
       if (!res.ok || !data.id) {
         setSubmitting(false);
-        setProgress(null);
         setError(data.error ?? `Er ging iets mis (${res.status})`);
         return;
       }
       router.push(`/rides/${data.id}`);
       router.refresh();
     } catch (err) {
+      clearTimeout(timeout);
       setSubmitting(false);
-      setProgress(null);
       if (err instanceof DOMException && err.name === "AbortError") {
-        setError("Time-out — probeer opnieuw of neem contact op.");
+        setError("Time-out na 60 sec. Probeer het opnieuw.");
       } else {
         setError(
           err instanceof Error
@@ -116,7 +70,6 @@ export default function RideForm(props: Props) {
             name="datetime"
             required
             className="field"
-            min={new Date().toISOString().slice(0, 16)}
           />
         </Field>
         <Field label="Titel" required>
@@ -238,12 +191,6 @@ export default function RideForm(props: Props) {
         Rit wordt aangemaakt door: <strong className="text-ink">{props.createdByLabel}</strong>
       </div>
 
-      {progress && !error && (
-        <div className="bg-cream-100 border border-cream-200 text-ink p-3 rounded-xl text-sm">
-          {progress}
-        </div>
-      )}
-
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl text-sm">
           {error}
@@ -251,7 +198,7 @@ export default function RideForm(props: Props) {
       )}
 
       <button type="submit" disabled={submitting} className="btn-primary w-full">
-        {submitting ? (progress ?? "Bezig…") : "Rit aanmaken"}
+        {submitting ? "Bezig met aanmaken…" : "Rit aanmaken"}
       </button>
     </form>
   );

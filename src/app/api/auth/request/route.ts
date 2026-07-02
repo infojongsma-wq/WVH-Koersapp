@@ -9,22 +9,22 @@ export async function POST(req: NextRequest) {
   }
 
   if (!(await isWhitelisted(email))) {
-    // Stil falen om e-mailadressen niet te onthullen
+    // Same generic reply as success so e-mail addresses aren't revealed.
     return NextResponse.json({
       ok: true,
       message:
-        "Als dit adres bekend is bij de club, ontvang je zo een inloglink. Vraag de beheerder als je geen mail krijgt.",
+        "Als dit adres bekend is bij de club, kun je zo inloggen. Geen knop? Vraag de beheerder om je e-mailadres toe te voegen.",
     });
   }
 
-  const relativeUrl = await createMagicLink(email);
-  // Build a full URL based on the current request so it's clickable from the same origin.
-  const fullUrl = new URL(relativeUrl, req.url).toString();
-  // In PoC: log naar server console + ook terugsturen op de dev pagina (/dev/magic-links)
-  console.log(`\n=== MAGIC LINK voor ${email} ===\n${fullUrl}\n================================\n`);
+  // PoC: no real e-mail sending yet. The login link is returned directly and
+  // shown as a button. The whitelist is the access gate; real e-mail
+  // verification arrives when we hook up an e-mail provider.
+  const loginUrl = await createMagicLink(email);
 
   return NextResponse.json({
     ok: true,
-    message: "Inloglink aangemaakt. Bekijk /dev/magic-links of de server-console.",
+    message: "Inloglink aangemaakt — klik op de knop hieronder.",
+    loginUrl,
   });
 }

@@ -9,7 +9,8 @@ import {
 } from "@/lib/constants";
 import { saveGpxFile } from "@/lib/storage";
 
-export const maxDuration = 30;
+// Upload + geocode + weather can exceed the default 10s.
+export const maxDuration = 60;
 
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
@@ -83,12 +84,6 @@ export async function POST(req: NextRequest) {
   const notes = get("notes").trim() || null;
   const startLocation = get("startLocation").trim() || DEFAULT_START_LOCATION;
 
-  // gpxUrl comes from client-side Vercel Blob upload; falls back to server-side
-  // upload of a File when running in local dev without BLOB token.
-  const gpxUrl = get("gpxUrl").trim();
-  const gpxOriginalName = get("gpxOriginalName").trim();
-  const gpxFile = form.get("gpx");
-
   if (!title || !datetimeStr || !category || !level) {
     return NextResponse.json({ error: "Vul alle verplichte velden in" }, { status: 400 });
   }
@@ -96,43 +91,44 @@ export async function POST(req: NextRequest) {
   if (Number.isNaN(datetime.getTime())) {
     return NextResponse.json({ error: "Ongeldige datum" }, { status: 400 });
   }
-
-  let coords: { lat: number; lon: number };
-  let storedRef: string | null = null;
-  let storedOriginal: string | null = null;
-
-  try {
-    if (gpxUrl && gpxUrl.startsWith("http")) {
-      storedRef = gpxUrl;
-      storedOriginal = gpxOriginalName || null;
-      coords =
-        startLocation === DEFAULT_START_LOCATION
-          ? DEFAULT_START_COORDS
-          : (await geocodeLocation(startLocation)) ?? DEFAULT_START_COORDS;
-    } else if (gpxFile && typeof gpxFile !== "string" && gpxFile.size > 0) {
-      // Legacy path: dev fallback when client didn't do a Blob upload.
-      const [c, stored] = await Promise.all([
-        startLocation === DEFAULT_START_LOCATION
-          ? Promise.resolve(DEFAULT_START_COORDS)
-          : geocodeLocation(startLocation).then((g) => g ?? DEFAULT_START_COORDS),
-        saveGpxFile(gpxFile as File),
-      ]);
-      coords = c;
-      storedRef = stored.ref;
-      storedOriginal = stored.originalName;
-    } else {
-      coords =
-        startLocation === DEFAULT_START_LOCATION
-          ? DEFAULT_START_COORDS
-          : (await geocodeLocation(startLocation)) ?? DEFAULT_START_COORDS;
-    }
-  } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Upload mislukt" },
-      { status: 500 }
-    );
+  if (!Number.isFinite(distanceKm) || distanceKm <= 0) {
+    return NextResponse.json({ error: "Ongeldig aantal kilometers" }, { status: 400 });
+  }
+  if (!Number.isFinite(avgSpeedKmh) || avgSpeedKmh <= 0) {
+    return NextResponse.json({ error: "Ongeldige gemiddelde snelheid" }, { status: 400 });
   }
 
+  // GPX upload (small files; Vercel allows request bodies up to 4.5MB).
+  let gpxRef: string | null = null;
+  let gpxOriginalName: string | null = null;
+  const gpxFile = form.get("gpx");
+  if (gpxFile && typeof gpxFile !== "string" && gpxFile.size > 0) {
+    if (gpxFile.size > 4 * 1024 * 1024) {
+      return NextResponse.json(
+        { error: "GPX-bestand is te groot (max 4MB)" },
+        { status: 400 }
+      );
+    }
+    try {
+      const stored = await saveGpxFile(gpxFile);
+      gpxRef = stored.ref;
+      gpxOriginalName = stored.originalName;
+    } catch (err) {
+      return NextResponse.json(
+        { error: err instanceof Error ? err.message : "GPX-upload mislukt" },
+        { status: 500 }
+      );
+    }
+  }
+
+  // Start coordinates: default club location, or geocode a custom one.
+  let coords = DEFAULT_START_COORDS;
+  if (startLocation !== DEFAULT_START_LOCATION) {
+    const g = await geocodeLocation(startLocation).catch(() => null);
+    if (g) coords = g;
+  }
+
+  // Weather is best-effort; the ride saves fine without it.
   const weather = await fetchWeatherForRide({
     lat: coords.lat,
     lon: coords.lon,
@@ -154,8 +150,8 @@ export async function POST(req: NextRequest) {
       startLocation,
       startLat: coords.lat,
       startLon: coords.lon,
-      gpxFilename: storedRef,
-      gpxOriginalName: storedOriginal,
+      gpxFilename: gpxRef,
+      gpxOriginalName,
       maxParticipants: MAX_PARTICIPANTS,
       createdById: user.id,
       weatherFetchedAt: weather ? new Date() : null,

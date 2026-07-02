@@ -8,23 +8,31 @@ function LoginInner() {
   const error = sp.get("error");
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<null | { ok: boolean; msg: string }>(null);
+  const [loginUrl, setLoginUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setStatus(null);
-    const res = await fetch("/api/auth/request", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
-    });
-    const data = await res.json();
-    setLoading(false);
-    setStatus({
-      ok: res.ok,
-      msg: data.message ?? data.error ?? "Onbekende fout",
-    });
+    setLoginUrl(null);
+    try {
+      const res = await fetch("/api/auth/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      setStatus({
+        ok: res.ok,
+        msg: data.message ?? data.error ?? "Onbekende fout",
+      });
+      if (data.loginUrl) setLoginUrl(data.loginUrl);
+    } catch {
+      setStatus({ ok: false, msg: "Verbindingsfout — probeer opnieuw" });
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -40,7 +48,7 @@ function LoginInner() {
           </div>
         </div>
         <p className="text-ink mb-6 leading-relaxed">
-          Vul je e-mailadres in. Je ontvangt een inloglink — geen wachtwoord nodig.
+          Vul je e-mailadres in om in te loggen — geen wachtwoord nodig.
         </p>
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
@@ -57,7 +65,7 @@ function LoginInner() {
             className="field"
           />
           <button type="submit" disabled={loading} className="btn-primary w-full">
-            {loading ? "Bezig…" : "Stuur inloglink"}
+            {loading ? "Bezig…" : "Inloggen"}
           </button>
         </form>
         {status && (
@@ -70,6 +78,11 @@ function LoginInner() {
           >
             {status.msg}
           </div>
+        )}
+        {loginUrl && (
+          <a href={loginUrl} className="btn-primary w-full mt-3">
+            → Klik hier om in te loggen
+          </a>
         )}
         <p className="text-xs text-ink-muted mt-8 text-center">
           Geen toegang? Vraag de beheerder om je e-mailadres op de whitelist te zetten.

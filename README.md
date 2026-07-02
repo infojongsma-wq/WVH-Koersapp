@@ -48,7 +48,10 @@ App draait op http://localhost:3000.
 In de PoC versturen we geen echte e-mails. Werkwijze:
 
 1. Ga naar `/login` en vul je e-mailadres in (moet op de whitelist staan — `ADMIN_EMAILS` uit `.env` wordt automatisch whitelist + admin).
-2. Open `/dev/magic-links` om je inloglink op te halen en klik 'm aan.
+2. Er verschijnt direct een knop "Klik hier om in te loggen" — klik erop.
+
+De whitelist is in deze fase de toegangspoort; echte e-mailverificatie komt
+zodra er een mailprovider (bijv. Resend of Supabase Auth) wordt gekoppeld.
 
 Eerste keer dat je inlogt word je naar `/profile` gestuurd om je naam en
 niveau in te vullen.
@@ -63,7 +66,7 @@ niveau in te vullen.
 | `/rides/[id]` | Detailpagina van een rit (aanmelden/comments/GPX/kaart) |
 | `/profile` | Mijn profiel (naam + niveau) |
 | `/admin` | Admin: whitelist + ritten modereren |
-| `/dev/magic-links` | (Dev) actieve inloglinks bekijken |
+| `/api/diag` | Diagnose: env-variabelen, database, versie |
 
 ## Niveaus en snelheidsindicaties
 
