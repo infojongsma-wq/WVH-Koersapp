@@ -38,25 +38,29 @@ export default function ProfileForm({
   }
 
   return (
-    <form onSubmit={submit} className="bg-white rounded-xl shadow-sm p-5 space-y-4">
+    <form onSubmit={submit} className="card p-6 md:p-8 space-y-5">
       <label className="block">
-        <span className="text-sm font-medium">Naam</span>
+        <span className="block text-[11px] uppercase tracking-wide font-semibold text-ink-muted mb-1.5">
+          Naam
+        </span>
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
-          className="mt-1 w-full border border-zinc-300 rounded-lg px-3 py-2"
+          className="field"
           placeholder="Voor- en achternaam"
         />
       </label>
       <label className="block">
-        <span className="text-sm font-medium">Mijn niveau</span>
+        <span className="block text-[11px] uppercase tracking-wide font-semibold text-ink-muted mb-1.5">
+          Mijn niveau
+        </span>
         <select
           value={level}
           onChange={(e) => setLevel(e.target.value)}
           required
-          className="mt-1 w-full border border-zinc-300 rounded-lg px-3 py-2"
+          className="field"
         >
           <option value="" disabled>Kies niveau…</option>
           {levels.map((l) => (
@@ -66,14 +70,10 @@ export default function ProfileForm({
           ))}
         </select>
       </label>
-      <button
-        type="submit"
-        disabled={saving}
-        className="w-full bg-wvh hover:bg-wvh-dark text-white font-semibold py-2.5 rounded-lg disabled:opacity-50"
-      >
+      <button type="submit" disabled={saving} className="btn-primary w-full">
         {saving ? "Opslaan…" : "Opslaan"}
       </button>
-      {msg && <p className="text-sm text-center text-zinc-600">{msg}</p>}
+      {msg && <p className="text-sm text-center text-ink-muted">{msg}</p>}
     </form>
   );
 }

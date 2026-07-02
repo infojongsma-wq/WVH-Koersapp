@@ -63,107 +63,84 @@ export default function AdminClient({
 
   return (
     <div className="space-y-6">
-      <section className="bg-white rounded-xl shadow-sm p-5">
-        <h2 className="font-semibold mb-3">Whitelist e-mailadressen</h2>
-        <form onSubmit={addEmail} className="flex flex-col md:flex-row gap-2 mb-4">
+      <section className="card p-5 md:p-6">
+        <h2 className="font-display text-xl font-bold mb-4">Whitelist e-mailadressen</h2>
+        <form onSubmit={addEmail} className="flex flex-col md:flex-row gap-2 mb-5">
           <input
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="lid@email.nl"
-            className="flex-1 border border-zinc-300 rounded px-3 py-1.5 text-sm"
+            className="field flex-1"
           />
           <input
             type="text"
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="Notitie (optioneel)"
-            className="flex-1 border border-zinc-300 rounded px-3 py-1.5 text-sm"
+            className="field flex-1"
           />
-          <button
-            type="submit"
-            disabled={pending}
-            className="bg-wvh hover:bg-wvh-dark text-white text-sm px-4 py-1.5 rounded disabled:opacity-50"
-          >
+          <button type="submit" disabled={pending} className="btn-primary">
             Toevoegen
           </button>
         </form>
-        <table className="w-full text-sm">
-          <thead className="text-xs text-zinc-500 uppercase">
-            <tr>
-              <th className="text-left py-1">E-mail</th>
-              <th className="text-left py-1">Notitie</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {initialWhitelist.length === 0 && (
-              <tr>
-                <td colSpan={3} className="text-zinc-400 italic py-2">
-                  Nog geen adressen op de whitelist.
-                </td>
-              </tr>
-            )}
-            {initialWhitelist.map((w) => (
-              <tr key={w.id} className="border-t">
-                <td className="py-1.5">{w.email}</td>
-                <td className="py-1.5 text-zinc-500">{w.note ?? ""}</td>
-                <td className="py-1.5 text-right">
-                  <button
-                    onClick={() => removeEmail(w.id)}
-                    className="text-xs text-red-600 hover:underline"
-                  >
-                    Verwijderen
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <ul className="divide-y divide-cream-200">
+          {initialWhitelist.length === 0 && (
+            <li className="py-3 text-ink-muted italic text-sm">
+              Nog geen adressen op de whitelist.
+            </li>
+          )}
+          {initialWhitelist.map((w) => (
+            <li key={w.id} className="py-3 flex items-center justify-between gap-3">
+              <div>
+                <div className="font-medium text-sm">{w.email}</div>
+                {w.note && (
+                  <div className="text-xs text-ink-muted">{w.note}</div>
+                )}
+              </div>
+              <button
+                onClick={() => removeEmail(w.id)}
+                className="text-xs text-red-600 hover:underline"
+              >
+                Verwijderen
+              </button>
+            </li>
+          ))}
+        </ul>
       </section>
 
-      <section className="bg-white rounded-xl shadow-sm p-5">
-        <h2 className="font-semibold mb-3">Ritten beheren</h2>
-        <table className="w-full text-sm">
-          <thead className="text-xs text-zinc-500 uppercase">
-            <tr>
-              <th className="text-left py-1">Titel</th>
-              <th className="text-left py-1">Aanmaker</th>
-              <th className="text-left py-1">Status</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {initialRides.map((r) => (
-              <tr key={r.id} className="border-t">
-                <td className="py-1.5">{r.title}</td>
-                <td className="py-1.5 text-zinc-500">
-                  {r.createdBy.name ?? r.createdBy.email}
-                </td>
-                <td className="py-1.5">
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded ${
-                      r.status === "PUBLISHED"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-zinc-200 text-zinc-600"
-                    }`}
-                  >
-                    {r.status}
-                  </span>
-                </td>
-                <td className="py-1.5 text-right">
-                  <button
-                    onClick={() => toggleRide(r.id, r.status)}
-                    className="text-xs text-wvh hover:underline"
-                  >
-                    {r.status === "PUBLISHED" ? "Verbergen" : "Publiceren"}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <section className="card p-5 md:p-6">
+        <h2 className="font-display text-xl font-bold mb-4">Ritten beheren</h2>
+        <ul className="divide-y divide-cream-200">
+          {initialRides.map((r) => (
+            <li key={r.id} className="py-3 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="font-medium text-sm truncate">{r.title}</div>
+                <div className="text-xs text-ink-muted">
+                  door {r.createdBy.name ?? r.createdBy.email}
+                </div>
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <span
+                  className={`chip ${
+                    r.status === "PUBLISHED"
+                      ? "!bg-green-50 !border-green-200 !text-green-700"
+                      : ""
+                  }`}
+                >
+                  {r.status}
+                </span>
+                <button
+                  onClick={() => toggleRide(r.id, r.status)}
+                  className="text-xs text-ink hover:underline"
+                >
+                  {r.status === "PUBLISHED" ? "Verbergen" : "Publiceren"}
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
       </section>
     </div>
   );

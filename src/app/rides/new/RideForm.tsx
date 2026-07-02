@@ -33,14 +33,14 @@ export default function RideForm(props: Props) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="bg-white rounded-xl shadow p-5 space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <form onSubmit={onSubmit} className="card p-6 md:p-8 space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <Field label="Datum + tijd" required>
           <input
             type="datetime-local"
             name="datetime"
             required
-            className="form-input"
+            className="field"
             min={new Date().toISOString().slice(0, 16)}
           />
         </Field>
@@ -49,13 +49,13 @@ export default function RideForm(props: Props) {
             type="text"
             name="title"
             required
-            placeholder="Bijv. Sallandse heuvelrug + koffie"
-            className="form-input"
+            placeholder="bv. Sallandse heuvelrug + koffie"
+            className="field"
           />
         </Field>
 
         <Field label="Soort rit" required>
-          <select name="category" required className="form-input" defaultValue="">
+          <select name="category" required className="field" defaultValue="">
             <option value="" disabled>Kies soort…</option>
             {props.categories.map((c) => (
               <option key={c.value} value={c.value}>
@@ -66,7 +66,7 @@ export default function RideForm(props: Props) {
         </Field>
 
         <Field label="Niveau" required>
-          <select name="level" required className="form-input" defaultValue="">
+          <select name="level" required className="field" defaultValue="">
             <option value="" disabled>Kies niveau…</option>
             {props.levels.map((l) => (
               <option key={l.value} value={l.value}>
@@ -83,8 +83,8 @@ export default function RideForm(props: Props) {
             min="1"
             step="0.1"
             required
-            placeholder="bijv. 85"
-            className="form-input"
+            placeholder="bv. 85"
+            className="field"
           />
         </Field>
 
@@ -96,8 +96,8 @@ export default function RideForm(props: Props) {
             max="50"
             step="0.5"
             required
-            placeholder="bijv. 31"
-            className="form-input"
+            placeholder="bv. 31"
+            className="field"
           />
         </Field>
 
@@ -107,14 +107,14 @@ export default function RideForm(props: Props) {
             name="captainName"
             defaultValue={props.defaultCaptainName}
             placeholder="Naam wegkapitein"
-            className="form-input"
+            className="field"
           />
         </Field>
 
         <Field label="Koffiestop?">
-          <label className="flex items-center gap-2 h-[42px]">
-            <input type="checkbox" name="coffeeStop" className="h-5 w-5" />
-            <span className="text-sm text-zinc-600">Ja, we plannen een koffiestop</span>
+          <label className="flex items-center gap-3 h-[46px] px-4 rounded-xl bg-white border border-cream-200 cursor-pointer hover:bg-cream-50 transition">
+            <input type="checkbox" name="coffeeStop" className="h-5 w-5 accent-wvh-yellow" />
+            <span className="text-sm text-ink">Ja, we plannen een koffiestop</span>
           </label>
         </Field>
 
@@ -123,7 +123,7 @@ export default function RideForm(props: Props) {
             type="text"
             name="startLocation"
             defaultValue={props.defaultStartLocation}
-            className="form-input"
+            className="field"
           />
         </Field>
 
@@ -132,20 +132,20 @@ export default function RideForm(props: Props) {
             name="description"
             rows={3}
             placeholder="Wat is het plan? Welke route?"
-            className="form-input"
+            className="field"
           />
         </Field>
 
         <Field
           label="Opmerking (weer/wind/overig)"
           className="md:col-span-2"
-          hint="Tip: weer + wind worden automatisch opgehaald. Hier alleen extra info."
+          hint="Weer + wind worden automatisch opgehaald. Hier alleen extra info."
         >
           <textarea
             name="notes"
             rows={2}
-            placeholder="bijv. ‘Pas op met losliggend grind tussen Markelo en Goor’"
-            className="form-input"
+            placeholder="bv. ‘Pas op met losliggend grind tussen Markelo en Goor’"
+            className="field"
           />
         </Field>
 
@@ -154,44 +154,24 @@ export default function RideForm(props: Props) {
             type="file"
             name="gpx"
             accept=".gpx,application/gpx+xml,application/xml,text/xml"
-            className="form-input"
+            className="field file:mr-4 file:py-1 file:px-3 file:rounded-pill file:border-0 file:bg-ink file:text-white file:text-xs file:font-medium hover:file:bg-ink-soft"
           />
         </Field>
       </div>
 
-      <div className="text-xs text-zinc-500 pt-2 border-t">
-        Rit wordt aangemaakt door: <strong>{props.createdByLabel}</strong>
+      <div className="text-xs text-ink-muted pt-4 border-t border-cream-200">
+        Rit wordt aangemaakt door: <strong className="text-ink">{props.createdByLabel}</strong>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded text-sm">
+        <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl text-sm">
           {error}
         </div>
       )}
 
-      <button
-        type="submit"
-        disabled={submitting}
-        className="w-full bg-wvh hover:bg-wvh-dark text-white font-semibold py-3 rounded-lg transition disabled:opacity-50"
-      >
+      <button type="submit" disabled={submitting} className="btn-primary w-full">
         {submitting ? "Bezig met aanmaken…" : "Rit aanmaken"}
       </button>
-
-      <style>{`
-        .form-input {
-          display: block;
-          width: 100%;
-          border: 1px solid #d4d4d8;
-          border-radius: 0.5rem;
-          padding: 0.5rem 0.75rem;
-          font-size: 0.95rem;
-        }
-        .form-input:focus {
-          outline: none;
-          border-color: #0b3d91;
-          box-shadow: 0 0 0 2px rgba(11,61,145,0.15);
-        }
-      `}</style>
     </form>
   );
 }
@@ -211,11 +191,11 @@ function Field({
 }) {
   return (
     <label className={`block ${className ?? ""}`}>
-      <span className="block text-sm font-medium text-zinc-700 mb-1">
-        {label} {required && <span className="text-red-500">*</span>}
+      <span className="block text-[11px] uppercase tracking-wide font-semibold text-ink-muted mb-1.5">
+        {label} {required && <span className="text-red-500 normal-case">*</span>}
       </span>
       {children}
-      {hint && <span className="block text-xs text-zinc-500 mt-1">{hint}</span>}
+      {hint && <span className="block text-xs text-ink-muted mt-1.5">{hint}</span>}
     </label>
   );
 }

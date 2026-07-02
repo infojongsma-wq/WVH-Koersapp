@@ -28,20 +28,22 @@ function LoginInner() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-wvh to-wvh-dark p-4">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="text-4xl">🚴</div>
+    <main className="min-h-screen flex items-center justify-center bg-cream p-4">
+      <div className="card p-8 md:p-10 max-w-md w-full">
+        <div className="flex items-center gap-3 mb-8">
+          <div className="text-3xl">🚴</div>
           <div>
-            <h1 className="text-2xl font-bold text-wvh">WVH Koersapp</h1>
-            <p className="text-sm text-zinc-500">Wielerclub Holten</p>
+            <h1 className="font-display text-2xl font-bold tracking-tight">
+              WVH Koersapp
+            </h1>
+            <p className="text-sm text-ink-muted">Wielerclub Holten</p>
           </div>
         </div>
-        <p className="text-zinc-700 mb-6">
-          Vul je e-mailadres in. Je ontvangt een inloglink (geen wachtwoord nodig).
+        <p className="text-ink mb-6 leading-relaxed">
+          Vul je e-mailadres in. Je ontvangt een inloglink — geen wachtwoord nodig.
         </p>
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
             {error}
           </div>
         )}
@@ -52,28 +54,24 @@ function LoginInner() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="jij@email.nl"
-            className="w-full border border-zinc-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-wvh"
+            className="field"
           />
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-wvh hover:bg-wvh-dark text-white font-semibold py-3 rounded-lg transition disabled:opacity-50"
-          >
+          <button type="submit" disabled={loading} className="btn-primary w-full">
             {loading ? "Bezig…" : "Stuur inloglink"}
           </button>
         </form>
         {status && (
           <div
-            className={`mt-4 p-3 rounded text-sm ${
+            className={`mt-4 p-3 rounded-xl text-sm ${
               status.ok
-                ? "bg-green-50 border border-green-200 text-green-700"
+                ? "bg-wvh-yellow/20 border border-wvh-yellow text-ink"
                 : "bg-red-50 border border-red-200 text-red-700"
             }`}
           >
             {status.msg}
           </div>
         )}
-        <p className="text-xs text-zinc-400 mt-6 text-center">
+        <p className="text-xs text-ink-muted mt-8 text-center">
           Geen toegang? Vraag de beheerder om je e-mailadres op de whitelist te zetten.
         </p>
       </div>

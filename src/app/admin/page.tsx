@@ -10,10 +10,12 @@ export default async function AdminPage() {
   if (!user) redirect("/login");
   if (user.role !== "ADMIN")
     return (
-      <main className="max-w-xl mx-auto p-6">
-        <h1 className="text-xl font-bold mb-2">Geen toegang</h1>
-        <p className="text-zinc-600">Alleen admins kunnen deze pagina bekijken.</p>
-      </main>
+      <div className="max-w-xl mx-auto px-4 md:px-6 py-10">
+        <h1 className="font-display text-2xl font-bold mb-2">Geen toegang</h1>
+        <p className="text-ink-muted">
+          Alleen admins kunnen deze pagina bekijken.
+        </p>
+      </div>
     );
 
   const [whitelist, rides] = await Promise.all([
@@ -26,9 +28,11 @@ export default async function AdminPage() {
   ]);
 
   return (
-    <main className="max-w-4xl mx-auto p-4 md:p-6">
-      <h1 className="text-2xl font-bold mb-4">Admin</h1>
+    <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 md:py-10">
+      <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight mb-6">
+        Admin
+      </h1>
       <AdminClient initialWhitelist={whitelist} initialRides={rides as never} />
-    </main>
+    </div>
   );
 }

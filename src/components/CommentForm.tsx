@@ -31,22 +31,22 @@ export default function CommentForm({ rideId }: { rideId: string }) {
   }
 
   return (
-    <form onSubmit={submit} className="space-y-2">
+    <form onSubmit={submit} className="space-y-3">
       <textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}
         placeholder="Voeg een opmerking toe…"
         rows={2}
-        className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-wvh"
+        className="field"
       />
       {error && <div className="text-red-600 text-xs">{error}</div>}
       <div className="flex justify-end">
         <button
           type="submit"
           disabled={pending || !body.trim()}
-          className="bg-wvh hover:bg-wvh-dark text-white text-sm px-4 py-2 rounded-lg disabled:opacity-50"
+          className="btn-primary"
         >
-          {pending ? "Bezig…" : "Plaats"}
+          {pending ? "Bezig…" : "Plaats reactie"}
         </button>
       </div>
     </form>

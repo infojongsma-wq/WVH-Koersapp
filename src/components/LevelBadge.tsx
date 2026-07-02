@@ -5,7 +5,7 @@ export function LevelBadge({ level }: { level: string }) {
   if (!meta) return <span>{level}</span>;
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${meta.color} ${meta.textColor}`}
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-pill text-[11px] font-semibold tracking-wide ${meta.color} ${meta.textColor}`}
       title={meta.speedRange}
     >
       {meta.label}

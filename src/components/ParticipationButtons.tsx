@@ -35,56 +35,60 @@ export default function ParticipationButtons({
     startTransition(() => router.refresh());
   }
 
-  const baseBtn =
-    "flex-1 py-3 px-3 rounded-lg font-medium text-sm md:text-base border transition disabled:opacity-50";
+  const btn =
+    "flex-1 rounded-pill py-3.5 px-4 font-semibold text-sm md:text-base border-2 transition disabled:opacity-50";
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-4">
-      <h3 className="font-semibold mb-3">Doe je mee?</h3>
-      <div className="flex gap-2">
+    <div className="card p-5 md:p-6">
+      <h3 className="font-display text-xl font-bold mb-4">Doe je mee?</h3>
+      <div className="flex flex-col sm:flex-row gap-2.5">
         <button
           disabled={pending}
           onClick={() => set(current === "GOING" ? null : "GOING")}
-          className={`${baseBtn} ${
+          className={`${btn} ${
             current === "GOING"
-              ? "bg-green-600 border-green-700 text-white"
-              : "bg-white border-zinc-300 text-zinc-700 hover:bg-green-50"
+              ? "bg-ink border-ink text-white"
+              : "bg-white border-cream-200 text-ink hover:border-ink"
           }`}
         >
-          {current === "GOING" ? "✓ " : ""}
+          {current === "GOING" && "✓ "}
           Doe mee
           {isFull && current !== "GOING" && (
-            <span className="block text-[10px] opacity-75">(wachtlijst)</span>
+            <span className="block text-[11px] font-normal opacity-75">
+              (wachtlijst)
+            </span>
           )}
         </button>
         <button
           disabled={pending}
           onClick={() => set(current === "INTERESTED" ? null : "INTERESTED")}
-          className={`${baseBtn} ${
+          className={`${btn} ${
             current === "INTERESTED"
-              ? "bg-amber-500 border-amber-600 text-white"
-              : "bg-white border-zinc-300 text-zinc-700 hover:bg-amber-50"
+              ? "bg-wvh-yellow border-wvh-yellow text-ink"
+              : "bg-white border-cream-200 text-ink hover:border-wvh-yellow"
           }`}
         >
-          {current === "INTERESTED" ? "✓ " : ""}🤔 Geïnteresseerd
+          {current === "INTERESTED" && "✓ "}
+          🤔 Geïnteresseerd
         </button>
         <button
           disabled={pending}
           onClick={() => set(current === "NOT_GOING" ? null : "NOT_GOING")}
-          className={`${baseBtn} ${
+          className={`${btn} ${
             current === "NOT_GOING"
-              ? "bg-zinc-700 border-zinc-800 text-white"
-              : "bg-white border-zinc-300 text-zinc-700 hover:bg-zinc-100"
+              ? "bg-cream-200 border-cream-300 text-ink"
+              : "bg-white border-cream-200 text-ink hover:bg-cream-50"
           }`}
         >
-          {current === "NOT_GOING" ? "✓ " : ""}Niet mee
+          {current === "NOT_GOING" && "✓ "}
+          Niet mee
         </button>
       </div>
       {current && (
         <button
           disabled={pending}
           onClick={() => set(null)}
-          className="mt-3 text-xs text-zinc-500 hover:text-zinc-700 underline"
+          className="mt-3 text-xs text-ink-muted hover:text-ink underline"
         >
           Selectie wissen
         </button>
