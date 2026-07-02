@@ -33,10 +33,35 @@ export default function RideForm(props: Props) {
       // bypassing our serverless function. Server then only stores the URL.
       if (hasGpx) {
         setProgress("GPX-bestand uploaden…");
-        const blob = await upload(`gpx/${gpxFile.name}`, gpxFile, {
-          access: "public",
-          handleUploadUrl: "/api/upload/gpx",
+        // Verify the token endpoint responds first — its actual error message
+        // is more useful than the generic Blob client "failed to retrieve token".
+        const probe = await fetch("/api/upload/gpx", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "blob.generate-client-token", payload: null }),
         });
+        if (!probe.ok) {
+          const txt = await probe.text().catch(() => "");
+          let msg = txt;
+          try {
+            const j = JSON.parse(txt);
+            msg = j.error ?? txt;
+          } catch {}
+          throw new Error(
+            `Blob-tokenendpoint gaf ${probe.status}: ${msg || "onbekende fout"}`
+          );
+        }
+
+        const uploadTimeout = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Blob upload duurde langer dan 30s")), 30_000)
+        );
+        const blob = await Promise.race([
+          upload(`gpx/${gpxFile.name}`, gpxFile, {
+            access: "public",
+            handleUploadUrl: "/api/upload/gpx",
+          }),
+          uploadTimeout,
+        ]);
         form.set("gpxUrl", blob.url);
         form.set("gpxOriginalName", gpxFile.name);
         form.delete("gpx");
