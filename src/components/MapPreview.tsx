@@ -18,25 +18,36 @@ type Props = {
   startLon?: number | null;
 };
 
+function validLatLon(lat: number, lon: number): boolean {
+  return (
+    Number.isFinite(lat) &&
+    Number.isFinite(lon) &&
+    Math.abs(lat) <= 90 &&
+    Math.abs(lon) <= 180
+  );
+}
+
 export default function MapPreview({ coordinates, startLat, startLon }: Props) {
   const divRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
 
   useEffect(() => {
     if (!divRef.current) return;
-    // If a previous instance somehow lingered on this element, drop it first.
     if (mapRef.current) {
       mapRef.current.remove();
       mapRef.current = null;
     }
 
-    const latlngs: [number, number][] = (coordinates ?? []).map(
-      ([lon, lat]) => [lat, lon]
-    );
+    // Convert stored [lon, lat] → Leaflet's [lat, lon], filter anything invalid.
+    const latlngs: [number, number][] = (coordinates ?? [])
+      .map(([lon, lat]): [number, number] => [lat, lon])
+      .filter(([lat, lon]) => validLatLon(lat, lon));
+
+    const holten: [number, number] = [52.2917, 6.4222];
     const fallback: [number, number] =
-      startLat != null && startLon != null
+      startLat != null && startLon != null && validLatLon(startLat, startLon)
         ? [startLat, startLon]
-        : [52.2917, 6.4222];
+        : holten;
     const center = latlngs[0] ?? fallback;
 
     const map = L.map(divRef.current).setView(center, 11);
@@ -49,7 +60,7 @@ export default function MapPreview({ coordinates, startLat, startLon }: Props) {
     }).addTo(map);
 
     if (latlngs.length > 0) {
-      L.polyline(latlngs, { color: "#0b3d91", weight: 4 }).addTo(map);
+      L.polyline(latlngs, { color: "#0A0A0A", weight: 4 }).addTo(map);
       L.marker(latlngs[0]).addTo(map);
       if (latlngs.length > 1) {
         map.fitBounds(L.latLngBounds(latlngs), { padding: [20, 20] });
@@ -67,7 +78,7 @@ export default function MapPreview({ coordinates, startLat, startLon }: Props) {
   return (
     <div
       ref={divRef}
-      className="h-64 md:h-80 rounded-xl overflow-hidden border"
+      className="h-64 md:h-80 rounded-xl overflow-hidden border border-cream-200"
     />
   );
 }
