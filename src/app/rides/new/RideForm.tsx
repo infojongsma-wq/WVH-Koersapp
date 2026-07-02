@@ -21,10 +21,23 @@ export default function RideForm(props: Props) {
     setSubmitting(true);
     setError(null);
     const form = new FormData(e.currentTarget);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 45_000);
     try {
-      const res = await fetch("/api/rides", { method: "POST", body: form });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
+      const res = await fetch("/api/rides", {
+        method: "POST",
+        body: form,
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+      const raw = await res.text();
+      let data: { id?: string; error?: string } = {};
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        data = { error: raw.slice(0, 200) || `HTTP ${res.status}` };
+      }
+      if (!res.ok || !data.id) {
         setSubmitting(false);
         setError(data.error ?? `Er ging iets mis (${res.status})`);
         return;
@@ -32,12 +45,19 @@ export default function RideForm(props: Props) {
       router.push(`/rides/${data.id}`);
       router.refresh();
     } catch (err) {
+      clearTimeout(timeout);
       setSubmitting(false);
-      setError(
-        err instanceof Error
-          ? `Verbindingsfout: ${err.message}`
-          : "Onbekende fout bij aanmaken"
-      );
+      if (err instanceof DOMException && err.name === "AbortError") {
+        setError(
+          "Time-out na 45 sec — waarschijnlijk hangt de GPX-upload naar Vercel Blob. Check Vercel → Storage."
+        );
+      } else {
+        setError(
+          err instanceof Error
+            ? `Verbindingsfout: ${err.message}`
+            : "Onbekende fout bij aanmaken"
+        );
+      }
     }
   }
 

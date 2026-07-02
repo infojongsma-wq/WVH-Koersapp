@@ -20,20 +20,28 @@ function safeName(name: string) {
 }
 
 export async function saveGpxFile(file: File): Promise<StoredFile> {
+  const started = Date.now();
+  console.log(`[storage] saveGpxFile start: ${file.name} (${file.size} bytes)`);
   const buf = Buffer.from(await file.arrayBuffer());
   const filename = `${Date.now()}_${randomBytes(4).toString("hex")}_${safeName(file.name)}`;
 
   if (process.env.BLOB_READ_WRITE_TOKEN) {
-    const { put } = await import("@vercel/blob");
-    const blob = await put(`gpx/${filename}`, buf, {
-      access: "public",
-      contentType: "application/gpx+xml",
-    });
-    return { ref: blob.url, isRemote: true, originalName: file.name };
+    console.log(`[storage] Uploading to Vercel Blob…`);
+    try {
+      const { put } = await import("@vercel/blob");
+      const blob = await put(`gpx/${filename}`, buf, {
+        access: "public",
+        contentType: "application/gpx+xml",
+      });
+      console.log(`[storage] Blob upload done in ${Date.now() - started}ms: ${blob.url}`);
+      return { ref: blob.url, isRemote: true, originalName: file.name };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`[storage] Blob upload failed: ${msg}`);
+      throw new Error(`Vercel Blob upload mislukt: ${msg}`);
+    }
   }
 
-  // On Vercel the filesystem is read-only. Bail with a clear message instead
-  // of trying to write to disk.
   if (process.env.VERCEL) {
     throw new Error(
       "Vercel Blob niet gekoppeld: BLOB_READ_WRITE_TOKEN ontbreekt. Koppel Storage → Blob aan dit project in Vercel."
@@ -42,6 +50,7 @@ export async function saveGpxFile(file: File): Promise<StoredFile> {
 
   await mkdir(LOCAL_UPLOAD_DIR, { recursive: true });
   await writeFile(path.join(LOCAL_UPLOAD_DIR, filename), buf);
+  console.log(`[storage] Local write done in ${Date.now() - started}ms`);
   return { ref: filename, isRemote: false, originalName: file.name };
 }
 
