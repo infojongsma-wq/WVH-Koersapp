@@ -7,8 +7,6 @@ import {
   DEFAULT_START_LOCATION,
   MAX_PARTICIPANTS,
 } from "@/lib/constants";
-import { saveGpxFile } from "@/lib/storage";
-
 // Upload + geocode + weather can exceed the default 10s.
 export const maxDuration = 60;
 
@@ -98,27 +96,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Ongeldige gemiddelde snelheid" }, { status: 400 });
   }
 
-  // GPX upload (small files; Vercel allows request bodies up to 4.5MB).
-  let gpxRef: string | null = null;
+  // GPX file: stored as text in the database — no external storage needed.
+  let gpxContent: string | null = null;
   let gpxOriginalName: string | null = null;
   const gpxFile = form.get("gpx");
   if (gpxFile && typeof gpxFile !== "string" && gpxFile.size > 0) {
-    if (gpxFile.size > 4 * 1024 * 1024) {
+    if (gpxFile.size > 2 * 1024 * 1024) {
       return NextResponse.json(
-        { error: "GPX-bestand is te groot (max 4MB)" },
+        { error: "GPX-bestand is te groot (max 2MB)" },
         { status: 400 }
       );
     }
-    try {
-      const stored = await saveGpxFile(gpxFile);
-      gpxRef = stored.ref;
-      gpxOriginalName = stored.originalName;
-    } catch (err) {
+    gpxContent = await gpxFile.text();
+    if (!gpxContent.includes("<gpx")) {
       return NextResponse.json(
-        { error: err instanceof Error ? err.message : "GPX-upload mislukt" },
-        { status: 500 }
+        { error: "Dit lijkt geen geldig GPX-bestand" },
+        { status: 400 }
       );
     }
+    gpxOriginalName = gpxFile.name;
   }
 
   // Start coordinates: default club location, or geocode a custom one.
@@ -150,7 +146,6 @@ export async function POST(req: NextRequest) {
       startLocation,
       startLat: coords.lat,
       startLon: coords.lon,
-      gpxFilename: gpxRef,
       gpxOriginalName,
       maxParticipants: MAX_PARTICIPANTS,
       createdById: user.id,
@@ -159,6 +154,13 @@ export async function POST(req: NextRequest) {
       weatherTempC: weather?.tempC,
       windDirection: weather?.windDirection,
       windSpeedKmh: weather?.windSpeedKmh,
+      ...(gpxContent && gpxOriginalName
+        ? {
+            gpxFile: {
+              create: { filename: gpxOriginalName, content: gpxContent },
+            },
+          }
+        : {}),
     },
   });
 

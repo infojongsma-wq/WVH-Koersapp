@@ -26,6 +26,7 @@ export default async function RideDetail({
     where: { id },
     include: {
       createdBy: { select: { name: true, email: true } },
+      gpxFile: true,
       participations: {
         include: { user: { select: { name: true, email: true, level: true } } },
         orderBy: { createdAt: "asc" },
@@ -39,12 +40,12 @@ export default async function RideDetail({
   if (!ride) notFound();
 
   let routeCoords: [number, number][] | undefined;
-  if (ride.gpxFilename) {
-    const xml = await readGpxContent(ride.gpxFilename);
-    if (xml) {
-      const parsed = parseGpx(xml);
-      if (parsed) routeCoords = parsed.coordinates;
-    }
+  const xml =
+    ride.gpxFile?.content ??
+    (ride.gpxFilename ? await readGpxContent(ride.gpxFilename) : null);
+  if (xml) {
+    const parsed = parseGpx(xml);
+    if (parsed) routeCoords = parsed.coordinates;
   }
 
   const goingAll = ride.participations.filter((p) => p.status === "GOING");
@@ -126,11 +127,11 @@ export default async function RideDetail({
       </div>
 
       {/* Map + GPX */}
-      {(routeCoords || ride.gpxFilename) && (
+      {(routeCoords || ride.gpxFile || ride.gpxFilename) && (
         <div className="card p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-display text-xl font-bold">Route</h2>
-            {ride.gpxFilename && (
+            {(ride.gpxFile || ride.gpxFilename) && (
               <a
                 href={`/api/rides/${ride.id}/gpx`}
                 className="btn-outline"

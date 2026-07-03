@@ -89,6 +89,7 @@ model Ride {
 
   participations Participation[]
   comments      Comment[]
+  gpxFile       GpxFile?
 
   @@index([datetime])
   @@index([category])
@@ -120,4 +121,16 @@ model Comment {
   createdAt DateTime @default(now())
 
   @@index([rideId])
+}
+
+// GPX route files, stored in the database (TEXT). Files are ~100-500KB,
+// so a club's season fits comfortably in the free Postgres tier — and it
+// removes any dependency on external file storage.
+model GpxFile {
+  id        String   @id @default(cuid())
+  rideId    String   @unique
+  ride      Ride     @relation(fields: [rideId], references: [id], onDelete: Cascade)
+  filename  String
+  content   String
+  createdAt DateTime @default(now())
 }

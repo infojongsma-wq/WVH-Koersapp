@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
-import { streamGpxToResponse } from "@/lib/storage";
+import { isRemoteRef, readGpxContent } from "@/lib/storage";
 
 export async function GET(
   _req: NextRequest,
@@ -10,17 +10,39 @@ export async function GET(
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Niet ingelogd" }, { status: 401 });
   const { id } = await ctx.params;
-  const ride = await prisma.ride.findUnique({ where: { id } });
-  if (!ride || !ride.gpxFilename)
-    return NextResponse.json({ error: "Geen GPX" }, { status: 404 });
+  const ride = await prisma.ride.findUnique({
+    where: { id },
+    include: { gpxFile: true },
+  });
+  if (!ride) return NextResponse.json({ error: "Rit niet gevonden" }, { status: 404 });
 
-  const res = await streamGpxToResponse(ride.gpxFilename);
-  if (!res) return NextResponse.json({ error: "Bestand niet gevonden" }, { status: 404 });
-
-  // Add filename hint for local downloads (Vercel Blob redirects handle their own).
-  if (!ride.gpxFilename.startsWith("http")) {
-    const filename = ride.gpxOriginalName ?? ride.gpxFilename;
-    res.headers.set("Content-Disposition", `attachment; filename="${filename}"`);
+  // New style: GPX content lives in the database.
+  if (ride.gpxFile) {
+    return new NextResponse(ride.gpxFile.content, {
+      headers: {
+        "Content-Type": "application/gpx+xml",
+        "Content-Disposition": `attachment; filename="${ride.gpxFile.filename}"`,
+      },
+    });
   }
-  return res;
+
+  // Legacy: gpxFilename referencing an external URL or local upload.
+  if (ride.gpxFilename) {
+    if (isRemoteRef(ride.gpxFilename)) {
+      return NextResponse.redirect(ride.gpxFilename, 302);
+    }
+    const content = await readGpxContent(ride.gpxFilename);
+    if (content) {
+      return new NextResponse(content, {
+        headers: {
+          "Content-Type": "application/gpx+xml",
+          "Content-Disposition": `attachment; filename="${
+            ride.gpxOriginalName ?? "route.gpx"
+          }"`,
+        },
+      });
+    }
+  }
+
+  return NextResponse.json({ error: "Geen GPX" }, { status: 404 });
 }
