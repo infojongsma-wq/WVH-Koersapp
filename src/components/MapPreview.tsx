@@ -53,7 +53,7 @@ export default function MapPreview({ coordinates, startLat, startLon }: Props) {
     const map = L.map(divRef.current).setView(center, 11);
     mapRef.current = map;
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{y}/{x}.png", {
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution:
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       maxZoom: 19,
