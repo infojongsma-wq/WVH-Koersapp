@@ -33,9 +33,10 @@ export async function POST(req: NextRequest) {
     try {
       await sendMagicLinkEmail(email, fullUrl);
     } catch (err) {
-      console.error("[mail] send failed:", err);
+      const reason = err instanceof Error ? err.message : String(err);
+      console.error("[mail] send failed:", reason);
       return NextResponse.json(
-        { error: "Versturen van de inloglink is mislukt. Probeer het later opnieuw." },
+        { error: `Versturen mislukt: ${reason}` },
         { status: 500 }
       );
     }
