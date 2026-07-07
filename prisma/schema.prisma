@@ -1,0 +1,136 @@
+// WVH Koersapp - Prisma schema
+// Postgres (Vercel Postgres / Neon / Supabase). DATABASE_URL is set by Vercel.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String          @id @default(cuid())
+  email         String          @unique
+  name          String?
+  level         String?         // "A", "AB", "B", "C", "D", "VROUWEN"
+  role          String          @default("MEMBER") // "MEMBER" or "ADMIN"
+  createdAt     DateTime        @default(now())
+
+  ridesCreated  Ride[]          @relation("RideCreatedBy")
+  participations Participation[]
+  comments      Comment[]
+  sessions      Session[]
+}
+
+model WhitelistEntry {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  addedAt   DateTime @default(now())
+  addedBy   String?
+  note      String?
+}
+
+model MagicLinkToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  email     String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Ride {
+  id            String          @id @default(cuid())
+  datetime      DateTime
+  title         String
+  category      String          // "RACE" | "GRAVEL" | "MTB" | "EVENT"
+  level         String          // "A" | "AB" | "B" | "C" | "D" | "VROUWEN"
+  distanceKm    Float
+  avgSpeedKmh   Float
+  captainName   String
+  coffeeStop    Boolean         @default(false)
+  gpxFilename   String?         // stored in /public/uploads
+  gpxOriginalName String?
+  description   String?
+  notes         String?         // wind, weer, etc.
+  startLocation String          @default("WVH Aaltinksweg, Holten")
+  startLat      Float?
+  startLon      Float?
+  maxParticipants Int           @default(14)
+
+  // Auto-fetched weather (cached, may be refreshed)
+  weatherFetchedAt DateTime?
+  weatherSummary   String?
+  weatherTempC     Float?
+  windDirection    String?      // N, NO, O, ZO, Z, ZW, W, NW
+  windSpeedKmh     Float?
+
+  status        String          @default("PUBLISHED") // "PUBLISHED" | "HIDDEN" | "CANCELLED"
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  createdById   String
+  createdBy     User            @relation("RideCreatedBy", fields: [createdById], references: [id])
+
+  participations Participation[]
+  comments      Comment[]
+  gpxFile       GpxFile?
+
+  @@index([datetime])
+  @@index([category])
+  @@index([level])
+}
+
+model Participation {
+  id        String   @id @default(cuid())
+  rideId   String
+  ride      Ride     @relation(fields: [rideId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status    String   // "GOING" | "INTERESTED" | "NOT_GOING"
+  position  Int?     // for waitlist when GOING and full
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([rideId, userId])
+  @@index([rideId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  rideId   String
+  ride      Ride     @relation(fields: [rideId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([rideId])
+}
+
+// GPX route files, stored in the database (TEXT). Files are ~100-500KB,
+// so a club's season fits comfortably in the free Postgres tier — and it
+// removes any dependency on external file storage.
+model GpxFile {
+  id        String   @id @default(cuid())
+  rideId    String   @unique
+  ride      Ride     @relation(fields: [rideId], references: [id], onDelete: Cascade)
+  filename  String
+  content   String
+  createdAt DateTime @default(now())
+}

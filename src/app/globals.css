@@ -1,0 +1,76 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  background: #f5f1e6;
+  color: #0a0a0a;
+  font-family: "Aptos", "Aptos Display", "Segoe UI Variable", "Segoe UI",
+    "Helvetica Neue", "Helvetica", "Arial", system-ui, sans-serif;
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.005em;
+}
+
+h1, h2, h3, h4 {
+  letter-spacing: -0.02em;
+}
+
+/* Leaflet fills its container */
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  border-radius: 0.75rem;
+}
+
+@layer components {
+  /* Big robust primary button — black pill */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-pill bg-ink text-white
+           px-6 py-3 font-semibold text-sm tracking-wide
+           hover:bg-ink-soft active:translate-y-px transition
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  /* Secondary / outline pill */
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2 rounded-pill
+           bg-white text-ink border border-cream-200
+           px-5 py-2.5 font-medium text-sm
+           hover:bg-cream-50 transition;
+  }
+  /* Small soft chip (for labels like "Holten", "09:00 u") */
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-pill
+           bg-white border border-cream-200
+           px-3 py-1 text-xs font-medium text-ink;
+  }
+  /* Card / surface */
+  .card {
+    @apply bg-white border border-cream-200 rounded-2xl;
+  }
+  /* Tab item */
+  .tab {
+    @apply relative px-4 py-2.5 text-sm font-semibold tracking-wide uppercase
+           text-ink-muted hover:text-ink transition;
+  }
+  .tab-active {
+    @apply text-ink;
+  }
+  .tab-active::after {
+    content: "";
+    @apply absolute left-0 right-0 -bottom-px h-1 rounded-full bg-wvh-yellow;
+  }
+  /* Form input */
+  .field {
+    @apply block w-full rounded-xl bg-white border border-cream-200
+           px-4 py-2.5 text-sm text-ink
+           focus:outline-none focus:ring-2 focus:ring-wvh-yellow focus:border-transparent
+           placeholder:text-ink-muted/60;
+  }
+}
