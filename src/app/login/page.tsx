@@ -80,7 +80,10 @@ function LoginInner() {
           </div>
         )}
         {loginUrl && (
-          <a href={loginUrl} className="btn-primary w-full mt-3">
+          <a
+            href={loginUrl}
+            className="btn-primary w-full mt-3 !py-4 text-base animate-pulse"
+          >
             → Klik hier om in te loggen
           </a>
         )}
