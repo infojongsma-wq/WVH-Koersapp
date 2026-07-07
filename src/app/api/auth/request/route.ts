@@ -29,30 +29,32 @@ export async function POST(req: NextRequest) {
   const relativeUrl = await createMagicLink(email);
   const fullUrl = getBaseUrl(req) + relativeUrl;
 
+  // Always return the on-screen login link so nobody can ever be locked out,
+  // even if e-mail delivery is broken or unconfigured. When SMTP works the
+  // mail is a bonus; the button is the guaranteed path.
   if (isMailConfigured()) {
     try {
       await sendMagicLinkEmail(email, fullUrl);
       return NextResponse.json({
         ok: true,
-        message: "Gelukt! We hebben je een inloglink gemaild. Check je inbox (en je spam-map).",
+        message:
+          "We hebben je een inloglink gemaild (check ook je spam). Of log direct in met de knop hieronder.",
+        loginUrl: relativeUrl,
       });
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
       console.error("[mail] send failed:", reason);
-      // Don't lock anyone out: fall back to the on-screen link and show why
-      // the e-mail failed so the mail setup can be fixed.
       return NextResponse.json({
         ok: true,
-        message: `De inlogmail kon niet verstuurd worden (reden: ${reason}). Gebruik voorlopig de knop hieronder om in te loggen.`,
+        message: `De inlogmail kon niet verstuurd worden — log in met de knop hieronder. (Technische reden: ${reason})`,
         loginUrl: relativeUrl,
       });
     }
   }
 
-  // Fallback (no SMTP configured yet): return the link so the app stays usable.
   return NextResponse.json({
     ok: true,
-    message: "Inloglink aangemaakt — klik op de knop hieronder.",
+    message: "Klik op de knop hieronder om in te loggen.",
     loginUrl: relativeUrl,
   });
 }
