@@ -14,22 +14,33 @@ export function isMailConfigured() {
   return Boolean(process.env.SMTP_USER && process.env.SMTP_PASS);
 }
 
-export async function sendMagicLinkEmail(to: string, url: string) {
+function buildTransport() {
   const host = process.env.SMTP_HOST ?? "smtp.gmail.com";
   const port = Number(process.env.SMTP_PORT ?? 465);
-  const secure = port === 465; // 465 = implicit TLS; 587 = STARTTLS
+  const secure = port === 465;
   const user = process.env.SMTP_USER as string;
   const pass = process.env.SMTP_PASS as string;
+  return nodemailer.createTransport({ host, port, secure, auth: { user, pass } });
+}
+
+// Used by /api/diag to test SMTP credentials without sending a mail.
+export async function verifyMail(): Promise<{ ok: boolean; error?: string }> {
+  if (!isMailConfigured()) return { ok: false, error: "SMTP niet geconfigureerd" };
+  try {
+    await buildTransport().verify();
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+export async function sendMagicLinkEmail(to: string, url: string) {
+  const user = process.env.SMTP_USER as string;
   const fromAddress = process.env.MAIL_FROM_ADDRESS ?? user;
   const fromName = process.env.MAIL_FROM_NAME ?? "WVH Koersapp";
   const from = `"${fromName}" <${fromAddress}>`;
 
-  const transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure,
-    auth: { user, pass },
-  });
+  const transporter = buildTransport();
 
   // Plain, personal, transactional tone. Heavy marketing markup and
   // image-only bodies are what spam filters punish.

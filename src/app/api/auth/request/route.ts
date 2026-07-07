@@ -32,18 +32,21 @@ export async function POST(req: NextRequest) {
   if (isMailConfigured()) {
     try {
       await sendMagicLinkEmail(email, fullUrl);
+      return NextResponse.json({
+        ok: true,
+        message: "Gelukt! We hebben je een inloglink gemaild. Check je inbox (en je spam-map).",
+      });
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
       console.error("[mail] send failed:", reason);
-      return NextResponse.json(
-        { error: `Versturen mislukt: ${reason}` },
-        { status: 500 }
-      );
+      // Don't lock anyone out: fall back to the on-screen link and show why
+      // the e-mail failed so the mail setup can be fixed.
+      return NextResponse.json({
+        ok: true,
+        message: `De inlogmail kon niet verstuurd worden (reden: ${reason}). Gebruik voorlopig de knop hieronder om in te loggen.`,
+        loginUrl: relativeUrl,
+      });
     }
-    return NextResponse.json({
-      ok: true,
-      message: "Gelukt! We hebben je een inloglink gemaild. Check je inbox (en je spam-map).",
-    });
   }
 
   // Fallback (no SMTP configured yet): return the link so the app stays usable.
