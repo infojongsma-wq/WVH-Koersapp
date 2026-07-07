@@ -21,3 +21,7 @@ public/uploads/*
 # logs
 *.log
 .DS_Store
+
+# TS incremental build info
+tsconfig.tsbuildinfo
+*.tsbuildinfo
