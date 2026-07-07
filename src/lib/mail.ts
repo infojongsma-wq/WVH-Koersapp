@@ -1,11 +1,15 @@
 import nodemailer from "nodemailer";
 
-// Magic-link e-mail via SMTP (Gmail by default). Configured through env vars:
-//   SMTP_USER      — the Gmail address (e.g. infojongsma@gmail.com)
-//   SMTP_PASS      — a Google "app password" (16 chars, not the normal password)
-//   MAIL_FROM_NAME — optional display name, defaults to "WVH Koersapp"
-//   SMTP_HOST      — optional, defaults to smtp.gmail.com
-//   SMTP_PORT      — optional, defaults to 465 (SSL)
+// Magic-link e-mail via SMTP. Provider-agnostic — works with Gmail or a
+// transactional provider like Brevo. Configured through env vars:
+//   SMTP_USER          — SMTP login (Gmail address, or Brevo login)
+//   SMTP_PASS          — SMTP password / app password / API key
+//   MAIL_FROM_ADDRESS  — visible sender address (defaults to SMTP_USER).
+//                        With Brevo this is your verified sender (your Gmail),
+//                        while SMTP_USER is the Brevo login.
+//   MAIL_FROM_NAME     — display name, defaults to "WVH Koersapp"
+//   SMTP_HOST          — defaults to smtp.gmail.com
+//   SMTP_PORT          — defaults to 465 (SSL); use 587 for Brevo (STARTTLS)
 export function isMailConfigured() {
   return Boolean(process.env.SMTP_USER && process.env.SMTP_PASS);
 }
@@ -13,15 +17,12 @@ export function isMailConfigured() {
 export async function sendMagicLinkEmail(to: string, url: string) {
   const host = process.env.SMTP_HOST ?? "smtp.gmail.com";
   const port = Number(process.env.SMTP_PORT ?? 465);
-  const secure = port === 465;
+  const secure = port === 465; // 465 = implicit TLS; 587 = STARTTLS
   const user = process.env.SMTP_USER as string;
   const pass = process.env.SMTP_PASS as string;
+  const fromAddress = process.env.MAIL_FROM_ADDRESS ?? user;
   const fromName = process.env.MAIL_FROM_NAME ?? "WVH Koersapp";
-
-  // The From address MUST match the authenticated Gmail account so that
-  // Gmail's SPF + DKIM signatures line up with the visible sender — the
-  // single biggest lever against landing in spam.
-  const from = `"${fromName}" <${user}>`;
+  const from = `"${fromName}" <${fromAddress}>`;
 
   const transporter = nodemailer.createTransport({
     host,
@@ -30,8 +31,8 @@ export async function sendMagicLinkEmail(to: string, url: string) {
     auth: { user, pass },
   });
 
-  // Plain, personal, transactional tone. Minimal styling — heavy marketing
-  // markup and image-only bodies are what spam filters punish.
+  // Plain, personal, transactional tone. Heavy marketing markup and
+  // image-only bodies are what spam filters punish.
   const html = `
   <div style="font-family:-apple-system,Segoe UI,Arial,sans-serif;max-width:440px;margin:0 auto;color:#111;font-size:15px;line-height:1.6">
     <p>Hoi,</p>
@@ -60,17 +61,14 @@ export async function sendMagicLinkEmail(to: string, url: string) {
 
   await transporter.sendMail({
     from,
-    sender: user, // envelope alignment with the authenticated account
-    replyTo: user,
+    replyTo: fromAddress,
     to,
     subject: "Je inloglink voor WVH Koersapp",
     text,
     html,
     headers: {
-      // Signals a legitimate, user-initiated transactional message.
-      "List-Unsubscribe": `<mailto:${user}?subject=uitschrijven>`,
+      "List-Unsubscribe": `<mailto:${fromAddress}?subject=uitschrijven>`,
       "X-Auto-Response-Suppress": "All",
     },
-    envelope: { from: user, to },
   });
 }
