@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { WvhLogo } from "@/components/WvhLogo";
 
 function LoginInner() {
   const sp = useSearchParams();
@@ -38,14 +39,12 @@ function LoginInner() {
   return (
     <main className="min-h-screen flex items-center justify-center bg-cream p-4">
       <div className="card p-8 md:p-10 max-w-md w-full">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="text-3xl">🚴</div>
-          <div>
-            <h1 className="font-display text-2xl font-bold tracking-tight">
-              WVH Koersapp
-            </h1>
-            <p className="text-sm text-ink-muted">Wielerclub Holten</p>
-          </div>
+        <div className="flex flex-col items-center text-center mb-8">
+          <WvhLogo className="h-24 w-24 mb-3" />
+          <h1 className="font-display text-2xl font-bold tracking-tight">
+            WVH Koersapp
+          </h1>
+          <p className="text-sm text-ink-muted">Wielerclub Holten</p>
         </div>
         <p className="text-ink mb-6 leading-relaxed">
           Vul je e-mailadres in om in te loggen — geen wachtwoord nodig.
