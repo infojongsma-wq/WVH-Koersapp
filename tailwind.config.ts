@@ -5,13 +5,15 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // WVH design tokens — cream + yellow + ink + brand blue.
+        // WVH design tokens. The "cream" scale is kept as the app's neutral
+        // surface/border palette but is now a light-blue tint (#cfddea family)
+        // so every page background, border and hover recolours in one place.
         cream: {
-          DEFAULT: "#F5F1E6",
-          50: "#FAF7EE",
-          100: "#EFE9D9",
-          200: "#E5DFCF",
-          300: "#D8CFB8",
+          DEFAULT: "#CFDDEA",
+          50: "#EAF2F8",
+          100: "#DCE8F2",
+          200: "#BFD2E3",
+          300: "#A6C0D6",
         },
         ink: {
           DEFAULT: "#0A0A0A",

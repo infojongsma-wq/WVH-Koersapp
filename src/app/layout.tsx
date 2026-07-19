@@ -3,6 +3,7 @@ import "leaflet/dist/leaflet.css";
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
+import { WvhLogo } from "@/components/WvhLogo";
 
 export const metadata: Metadata = {
   title: "WVH Koersapp",
@@ -10,7 +11,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#F5F1E6",
+  themeColor: "#CFDDEA",
   width: "device-width",
   initialScale: 1,
 };
@@ -30,9 +31,9 @@ export default async function RootLayout({
             <div className="max-w-6xl mx-auto px-5 py-4 flex items-center justify-between gap-6">
               <Link
                 href="/"
-                className="font-display text-xl font-bold tracking-tight flex items-center gap-2"
+                className="font-display text-xl font-bold tracking-tight flex items-center gap-2.5"
               >
-                <span aria-hidden>🚴</span>
+                <WvhLogo className="h-9 w-9 shrink-0" />
                 <span>
                   WVH <span className="text-ink-muted font-normal">Koersapp</span>
                 </span>
